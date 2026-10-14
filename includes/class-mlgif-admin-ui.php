@@ -190,7 +190,7 @@ final class MLGIF_Admin_UI {
                 <div class="mlpb-card" style="margin-top:18px;">
                     <div class="mlpb-card-header"><div><h2>🔄 GitHub Auto-Updater</h2><p class="mlpb-muted">Status do mecanismo de atualização automática via GitHub Releases.</p></div></div>
                     <?php
-                    $gh_repo      = 'mlopesdesign/ml-gif-pro';
+                    $gh_repo      = 'mlopesdesign/ml-gif-pro-releases';
                     $gh_url       = 'https://github.com/' . $gh_repo;
                     $cache_key    = 'mlgif_updater_release_cache';
                     $cached       = get_transient($cache_key);

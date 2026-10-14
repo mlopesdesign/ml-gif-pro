@@ -37,6 +37,15 @@ jobs:
             echo "ERROR: Header version mismatch ($HEADER_VERSION != $TAG_VERSION)"
             exit 1
           fi
+          if [ "$CONST_VERSION" != "$TAG_VERSION" ]; then
+            echo "ERROR: MLGIF_VERSION mismatch ($CONST_VERSION != $TAG_VERSION)"
+            exit 1
+          fi
+          STABLE=$(grep -m1 "Stable tag:" readme.txt | sed 's/.*Stable tag: *//' | tr -d '\r')
+          if [ "$STABLE" != "$TAG_VERSION" ]; then
+            echo "ERROR: readme Stable tag mismatch ($STABLE != $TAG_VERSION)"
+            exit 1
+          fi
 
       - name: Build plugin ZIP
         run: |

@@ -167,14 +167,9 @@ final class MLGIF_Updater {
     private function get_latest_release(): ?array {
         $cached = get_transient(self::CACHE_KEY);
         if (is_array($cached)) {
-            // Se o cache aponta para a versão instalada atual, está desatualizado
-            // (pode ter sido salvo antes de um update) — forçar revalidação
-            $cached_tag = ltrim((string) ($cached['tag_name'] ?? ''), 'v');
-            if ($cached_tag === $this->current_version) {
-                delete_transient(self::CACHE_KEY);
-            } else {
-                return $cached;
-            }
+            // Cache valido mesmo quando a tag e igual a versao instalada (resultado: no_update).
+            // Antes ele era apagado nesse caso, e todo site em dia consultava a API a cada verificacao.
+            return $cached;
         }
 
         $args = [
