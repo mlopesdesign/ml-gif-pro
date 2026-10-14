@@ -1,0 +1,103 @@
+name: Build and Release Plugin ZIP
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'v*.*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ZIP and Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG#v}
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "zip_name=ml-gif-pro-${TAG}.zip" >> $GITHUB_OUTPUT
+
+      - name: Validate version in plugin header
+        run: |
+          HEADER_VERSION=$(grep -m1 "Version:" ml-gif-pro.php | sed 's/.*Version: *//')
+          CONST_VERSION=$(grep "define('MLGIF_VERSION'" ml-gif-pro.php | sed "s/.*'\(.*\)'.*/\1/")
+          TAG_VERSION=${{ steps.version.outputs.version }}
+          echo "Header: $HEADER_VERSION | Constant: $CONST_VERSION | Tag: $TAG_VERSION"
+          if [ "$HEADER_VERSION" != "$TAG_VERSION" ]; then
+            echo "ERROR: Header version mismatch ($HEADER_VERSION != $TAG_VERSION)"
+            exit 1
+          fi
+
+      - name: Build plugin ZIP
+        run: |
+          ZIP_NAME="${{ steps.version.outputs.zip_name }}"
+          # Criar ZIP com pasta raiz ml-gif-pro/ (slug correto)
+          mkdir -p /tmp/plugin_build
+          rsync -av --exclude-from='.distignore' --exclude='.git' . /tmp/plugin_build/ml-gif-pro/
+          cd /tmp/plugin_build
+          zip -r "$GITHUB_WORKSPACE/$ZIP_NAME" ml-gif-pro/
+          echo "ZIP created: $ZIP_NAME"
+          ls -lh "$GITHUB_WORKSPACE/$ZIP_NAME"
+
+      - name: Validate ZIP structure
+        run: |
+          ZIP_NAME="${{ steps.version.outputs.zip_name }}"
+          # Verificar pasta raiz correta
+          ROOT=$(unzip -l "$ZIP_NAME" | awk '{print $4}' | grep "/" | head -1 | cut -d'/' -f1)
+          echo "ZIP root folder: $ROOT"
+          if [ "$ROOT" != "ml-gif-pro" ]; then
+            echo "ERROR: ZIP root must be ml-gif-pro, got: $ROOT"
+            exit 1
+          fi
+          # Verificar main file
+          if ! unzip -l "$ZIP_NAME" | grep -q "ml-gif-pro/ml-gif-pro.php"; then
+            echo "ERROR: ml-gif-pro.php not found inside ZIP"
+            exit 1
+          fi
+          echo "ZIP structure OK"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "ML Gif Pro ${{ steps.version.outputs.tag }}"
+          draft: false
+          prerelease: false
+          files: ${{ steps.version.outputs.zip_name }}
+          body: |
+            ## ML Gif Pro ${{ steps.version.outputs.tag }}
+
+            Instale diretamente pelo painel WordPress ou faça o download do ZIP abaixo.
+
+            **Requisitos:** WordPress 6.0+, PHP 8.1+, PHP Imagick
+
+      # O updater (1.1.4.6+) consulta SOMENTE o repositorio publico de releases.
+      # Requer o secret GH_RELEASE_TOKEN (PAT com contents:write em ml-gif-pro-releases).
+      - name: Verificar token do repositorio de releases
+        id: reltoken
+        env:
+          T: ${{ secrets.GH_RELEASE_TOKEN }}
+        run: if [ -n "$T" ]; then echo "ok=true" >> $GITHUB_OUTPUT; else echo "ok=false" >> $GITHUB_OUTPUT; echo "::warning::GH_RELEASE_TOKEN ausente - publique o ZIP manualmente em ml-gif-pro-releases"; fi
+
+      - name: Publicar no repositorio publico de releases
+        if: steps.reltoken.outputs.ok == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: mlopesdesign/ml-gif-pro-releases
+          token: ${{ secrets.GH_RELEASE_TOKEN }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "ML Gif Pro ${{ steps.version.outputs.tag }}"
+          files: ${{ steps.version.outputs.zip_name }}
+          draft: false
+          prerelease: false
+          make_latest: true

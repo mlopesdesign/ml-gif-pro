@@ -1,0 +1,20 @@
+# Files/folders to exclude from distribution ZIP
+.git
+.gitignore
+.github
+.distignore
+node_modules
+*.log
+*.zip
+dist/
+build/
+tests/
+phpunit.xml
+.phpcs.xml
+composer.json
+composer.lock
+package.json
+package-lock.json
+yarn.lock
+*.md
+!readme.txt
