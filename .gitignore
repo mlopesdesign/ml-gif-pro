@@ -1,0 +1,28 @@
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build artifacts
+*.zip
+dist/
+build/
+
+# WordPress
+wp-config.php
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temp
+*.tmp
+*.bak
+*.orig
