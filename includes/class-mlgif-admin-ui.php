@@ -5,19 +5,18 @@ if (!defined('ABSPATH')) {
 
 final class MLGIF_Admin_UI {
 
-    public function render(array $settings, array $license_state, array $license_config, string $active_tab, string $toast_message = '', string $toast_type = 'success', ?MLGIF_License $license_manager = null): void {
+    public function render(array $settings, array $license, string $active_tab, string $toast_message = '', string $toast_type = 'success'): void {
+        // 1.2.0: a aba Licença fica sempre visível (licença pelo site tools.mlopesdesign.com.br).
         $tabs = [
             'dashboard' => 'Dashboard',
             'projects'  => 'Projetos GIF',
             'settings'  => 'Configurações',
+            'license'   => 'Licença',
         ];
-        if (($settings['enable_license_tab'] ?? '1') === '1') {
-            $tabs['license'] = 'Licença';
-        }
         if (!isset($tabs[$active_tab])) {
             $active_tab = 'dashboard';
         }
-        $license_manager = $license_manager ?: new MLGIF_License();
+        $locked = empty($license['active']);
         $total           = MLGIF_DB::count_projects();
         $generated       = MLGIF_DB::count_generated();
         $imagick_ok      = MLGIF_Helpers::imagick_available();
@@ -38,7 +37,7 @@ final class MLGIF_Admin_UI {
                     <span class="mlpb-version-badge">v<?php echo esc_html(MLGIF_VERSION); ?></span>
                     <div class="mlpb-hero-tags">
                         <span class="mlpb-chip <?php echo $imagick_ok ? '' : 'mlgif-chip-error'; ?>"><?php echo $imagick_ok ? 'Imagick OK' : 'Imagick ausente'; ?></span>
-                        <span class="mlpb-chip"><?php echo esc_html($license_manager->get_plan_label((string) ($license_state['plan'] ?? 'free'))); ?></span>
+                        <span class="mlpb-chip mlgif-lic-chip is-<?php echo esc_attr($license['tone']); ?>"><?php echo esc_html($license['label']); ?></span>
                     </div>
                 </div>
             </section>
@@ -46,6 +45,13 @@ final class MLGIF_Admin_UI {
             <?php if (!$imagick_ok): ?>
             <div class="mlgif-alert mlgif-alert-error">
                 <strong>⚠ PHP Imagick não está disponível.</strong> A geração de GIF requer a extensão Imagick habilitada no servidor. Contate seu provedor de hospedagem para ativar a extensão <code>php-imagick</code>.
+            </div>
+            <?php endif; ?>
+
+            <?php if ($locked) : ?>
+            <div class="mlgif-alert mlgif-alert-license" data-mlgif-locked-notice>
+                <strong>ML Gif Pro:</strong> sem licença ativa — o painel está só para leitura. Os GIFs já publicados continuam funcionando no site.
+                <a href="<?php echo esc_url(add_query_arg(['page' => 'ml-gif-pro', 'tab' => 'license'], admin_url('admin.php'))); ?>">Ativar licença</a>
             </div>
             <?php endif; ?>
 
@@ -75,8 +81,8 @@ final class MLGIF_Admin_UI {
                     </article>
                     <article class="mlpb-summary-card">
                         <span class="mlpb-summary-label">Licença</span>
-                        <strong><?php echo esc_html($license_manager->get_plan_label((string) ($license_state['plan'] ?? 'free'))); ?></strong>
-                        <small>Status: <?php echo esc_html($license_manager->get_status_label((string) ($license_state['status'] ?? 'inactive'))); ?></small>
+                        <strong><?php echo esc_html($license['label']); ?></strong>
+                        <small><?php echo esc_html($license['message']); ?></small>
                     </article>
                 </div>
                 <div class="mlpb-grid">
@@ -223,50 +229,91 @@ final class MLGIF_Admin_UI {
             </section>
 
             <!-- LICENSE -->
-            <?php if (($settings['enable_license_tab'] ?? '1') === '1') : ?>
             <section id="mlgif-tab-license" class="mlpb-tab-panel <?php echo $active_tab === 'license' ? 'is-active' : ''; ?>" <?php echo $active_tab === 'license' ? '' : 'hidden'; ?>>
-                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                    <?php wp_nonce_field('mlgif_save_license'); ?>
-                    <input type="hidden" name="action" value="mlgif_save_license">
-                    <div class="mlpb-grid-2" style="display:grid;grid-template-columns:1.2fr .8fr;gap:18px;">
-                        <article class="mlpb-card">
-                            <div class="mlpb-card-header"><div><h2>Licença ML Gif Pro</h2><p class="mlpb-muted">Serial, plano e validação remota.</p></div></div>
-                            <div class="mlpb-form-grid">
-                                <div class="mlpb-field"><label for="mlgif-license-plan">Plano</label>
-                                    <select id="mlgif-license-plan" name="mlgif_license[plan]">
-                                        <?php foreach (['free' => 'Free', 'trial' => 'Trial', 'full' => 'Full', 'lifetime' => 'Vitalício'] as $value => $label) : ?>
-                                            <option value="<?php echo esc_attr($value); ?>" <?php selected(($license_state['plan'] ?? 'free') === $value); ?>><?php echo esc_html($label); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="mlpb-field"><label for="mlgif-license-status">Status</label>
-                                    <select id="mlgif-license-status" name="mlgif_license[status]">
-                                        <?php foreach (['inactive' => 'Inativo', 'active' => 'Ativo', 'expired' => 'Expirado', 'blocked' => 'Bloqueado'] as $value => $label) : ?>
-                                            <option value="<?php echo esc_attr($value); ?>" <?php selected(($license_state['status'] ?? 'inactive') === $value); ?>><?php echo esc_html($label); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="mlpb-field"><label for="mlgif-license-email">E-mail</label><input id="mlgif-license-email" type="text" name="mlgif_license[email]" value="<?php echo esc_attr($license_state['email'] ?? ''); ?>"></div>
-                                <div class="mlpb-field"><label for="mlgif-license-expires">Expira em</label><input id="mlgif-license-expires" type="text" name="mlgif_license[expires_at]" value="<?php echo esc_attr($license_state['expires_at'] ?? ''); ?>"></div>
-                                <div class="mlpb-field" style="grid-column:1/-1;"><label for="mlgif-license-serial">Serial</label><input id="mlgif-license-serial" type="text" name="mlgif_license[serial]" value="<?php echo esc_attr($license_state['serial'] ?? ''); ?>"></div>
-                            </div>
-                            <div class="mlpb-actions" style="margin-top:18px;"><button type="submit" class="button button-primary mlpb-action-button">Salvar licença</button></div>
-                        </article>
-                        <article class="mlpb-card">
-                            <div class="mlpb-card-header"><div><h2>Estado atual</h2></div></div>
-                            <ul class="mlpb-list">
-                                <li><strong>Plano:</strong> <?php echo esc_html($license_manager->get_plan_label((string) ($license_state['plan'] ?? 'free'))); ?></li>
-                                <li><strong>Status:</strong> <?php echo esc_html($license_manager->get_status_label((string) ($license_state['status'] ?? 'inactive'))); ?></li>
-                                <li><strong>Serial:</strong> <?php echo esc_html((string) ($license_state['serial'] ?? '')); ?></li>
-                                <li><strong>Última validação:</strong> <?php echo esc_html((string) ($license_state['last_check'] ?? '')); ?></li>
-                                <li><strong>Endpoint:</strong> <?php echo esc_html((string) ($license_config['endpoint'] ?? 'Não configurado')); ?></li>
-                                <li><strong>Mensagem:</strong> <?php echo esc_html((string) ($license_state['message'] ?? '')); ?></li>
-                            </ul>
-                        </article>
-                    </div>
-                </form>
+                <?php $this->render_license_panel($license); ?>
             </section>
-            <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    private function render_license_panel(array $license): void {
+        $post_url  = esc_url(admin_url('admin-post.php'));
+        $days_left = $license['days_left'];
+        $is_life   = 'lifetime' === ($license['plan'] ?? '');
+        $valid     = $license['active'] ? ($license['expires_label'] && !$is_life ? $license['expires_label'] : 'Sem vencimento') : '—';
+        $days      = $license['active'] && null !== $days_left && $license['expires_label'] && !$is_life ? (string) (int) $days_left : '—';
+        ?>
+        <div class="mlpb-summary-grid">
+            <article class="mlpb-summary-card"><span class="mlpb-summary-label">Situação</span><strong><?php echo esc_html($license['label']); ?></strong></article>
+            <article class="mlpb-summary-card"><span class="mlpb-summary-label">Plano</span><strong><?php echo esc_html($license['plan_label']); ?></strong></article>
+            <article class="mlpb-summary-card"><span class="mlpb-summary-label">Válida até</span><strong><?php echo esc_html($valid); ?></strong></article>
+            <article class="mlpb-summary-card"><span class="mlpb-summary-label">Dias restantes</span><strong><?php echo esc_html($days); ?></strong></article>
+        </div>
+        <div class="mlpb-grid">
+            <article class="mlpb-card">
+                <div class="mlpb-card-header">
+                    <div><h2>Licença ML Gif Pro</h2><p class="mlpb-muted"><?php echo esc_html($license['message']); ?></p></div>
+                    <span class="mlpb-chip mlgif-lic-chip is-<?php echo esc_attr($license['tone']); ?>"><?php echo esc_html($license['domain']); ?></span>
+                </div>
+
+                <?php if ('license' === $license['mode'] && '' !== $license['key_masked']) : ?>
+                    <ul class="mlpb-list"><li><strong>Chave neste site:</strong> <code><?php echo esc_html($license['key_masked']); ?></code></li></ul>
+                    <div class="mlpb-actions" style="margin-top:14px;">
+                        <form method="post" action="<?php echo $post_url; ?>">
+                            <?php wp_nonce_field('mlgif_sync_license'); ?>
+                            <input type="hidden" name="action" value="mlgif_sync_license">
+                            <input type="hidden" name="mlgif_op" value="check">
+                            <button type="submit" class="button button-primary mlpb-action-button">Conferir agora</button>
+                        </form>
+                        <form method="post" action="<?php echo $post_url; ?>">
+                            <?php wp_nonce_field('mlgif_remove_license'); ?>
+                            <input type="hidden" name="action" value="mlgif_remove_license">
+                            <button type="submit" class="button mlpb-action-button mlpb-action-button--secondary">Remover deste site</button>
+                        </form>
+                    </div>
+                <?php else : ?>
+                    <form method="post" action="<?php echo $post_url; ?>">
+                        <?php wp_nonce_field('mlgif_activate_license'); ?>
+                        <input type="hidden" name="action" value="mlgif_activate_license">
+                        <div class="mlpb-field">
+                            <label for="mlgif-license-key">Chave da licença</label>
+                            <input id="mlgif-license-key" type="text" name="license_key" value="" placeholder="Cole aqui a sua chave" autocomplete="off" spellcheck="false">
+                        </div>
+                        <div class="mlpb-actions" style="margin-top:14px;">
+                            <button type="submit" class="button button-primary mlpb-action-button">Ativar licença</button>
+                        </div>
+                    </form>
+                    <div class="mlpb-actions" style="margin-top:12px;">
+                        <?php if ($license['can_start_trial']) : ?>
+                            <form method="post" action="<?php echo $post_url; ?>">
+                                <?php wp_nonce_field('mlgif_sync_license'); ?>
+                                <input type="hidden" name="action" value="mlgif_sync_license">
+                                <input type="hidden" name="mlgif_op" value="trial">
+                                <button type="submit" class="button mlpb-action-button mlpb-action-button--secondary">Começar teste grátis de 30 dias</button>
+                            </form>
+                        <?php elseif ($license['is_trial']) : ?>
+                            <form method="post" action="<?php echo $post_url; ?>">
+                                <?php wp_nonce_field('mlgif_sync_license'); ?>
+                                <input type="hidden" name="action" value="mlgif_sync_license">
+                                <input type="hidden" name="mlgif_op" value="check">
+                                <button type="submit" class="button mlpb-action-button mlpb-action-button--secondary">Conferir agora</button>
+                            </form>
+                        <?php endif; ?>
+                        <a class="button mlpb-action-button mlpb-action-button--secondary" href="<?php echo esc_url(MLGIF_License::BUY_URL); ?>" target="_blank" rel="noopener">Comprar licença</a>
+                        <a class="button mlpb-action-button mlpb-action-button--secondary" href="<?php echo esc_url(MLGIF_License::ACCOUNT_URL); ?>" target="_blank" rel="noopener">Minha conta</a>
+                    </div>
+                <?php endif; ?>
+            </article>
+            <article class="mlpb-card">
+                <div class="mlpb-card-header"><div><h2>Como funciona</h2><p class="mlpb-muted">Licença pelo site tools.mlopesdesign.com.br.</p></div></div>
+                <ul class="mlpb-list">
+                    <li><strong>Teste grátis:</strong> 30 dias com tudo liberado, uma vez por site. Reinstalar não reinicia.</li>
+                    <li><strong>Licença anual:</strong> vale em 1 site. Para usar em outro, remova deste site.</li>
+                    <li><strong>Pacote Agência:</strong> uma chave para todos os plugins ML em 5, 10 ou 50 sites.</li>
+                    <li><strong>Sem licença:</strong> os GIFs já publicados continuam funcionando no site e nada é apagado. Só o painel fica bloqueado para criar, editar, gerar e apagar.</li>
+                </ul>
+                <div class="mlpb-note">A licença é conferida uma vez por dia. Sem internet, o site continua liberado por até 7 dias.</div>
+            </article>
         </div>
         <?php
     }

@@ -104,7 +104,7 @@
           if(window.mlgifShowToast){ window.mlgifShowToast('Projeto excluído.', 'success'); }
           setTimeout(function(){ window.location.reload(); }, 700);
         } else {
-          if(window.mlgifShowToast){ window.mlgifShowToast('Erro ao excluir.', 'error'); }
+          if(window.mlgifShowToast){ window.mlgifShowToast((data.data && data.data.error) || 'Erro ao excluir.', 'error'); }
         }
       }).catch(function(){
         if(window.mlgifShowToast){ window.mlgifShowToast('Erro de comunicação.', 'error'); }

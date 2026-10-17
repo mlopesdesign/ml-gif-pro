@@ -104,3 +104,10 @@ body.admin-bar #mlpb-toast-area{top:50px}
 .mlgif-color-text{flex:1;font-family:monospace;font-size:13px}
 .mlgif-btn-transparent{width:36px;height:36px;border:1px solid var(--mlpb-line);border-radius:8px;background:#fff;cursor:pointer;font-size:14px;color:var(--mlpb-muted);flex-shrink:0;transition:border-color .15s}
 .mlgif-btn-transparent:hover{border-color:#c0392b;color:#c0392b}
+
+/* ── Licença (1.2.0) ─────────────────────────────────── */
+.mlgif-alert-license{background:#fffbeb;border:1px solid #fcd34d;color:#92400e;font-weight:500}
+.mlgif-alert-license a{color:#92400e;font-weight:700;margin-left:6px}
+.mlgif-lic-chip.is-full{background:#e6f9ee;border-color:#b7e4c7;color:#1a7c3e}
+.mlgif-lic-chip.is-trial{background:#eaf5f7;border-color:#bfd6dc;color:#155e6f}
+.mlgif-lic-chip.is-free{background:#fdf0e6;border-color:#f3d2b5;color:#a3521a}

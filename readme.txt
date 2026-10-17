@@ -4,7 +4,7 @@ Tags: gif, animated gif, image, media, banner
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.1.4.6
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,7 +26,7 @@ Recursos principais:
 * URL copiável e botão de download
 * Regeneração após mudança de configurações
 * Gerenciamento de projetos com histórico completo
-* Licenciamento padrão ML (free/trial/full/lifetime)
+* Licença pelo site tools.mlopesdesign.com.br: teste grátis de 30 dias, licença anual ou Pacote Agência
 
 == Installation ==
 
@@ -42,6 +42,13 @@ Recursos principais:
 * /wp-content/uploads/ com permissão de escrita
 
 == Changelog ==
+
+= 1.2.0 =
+* Licença pelo site tools.mlopesdesign.com.br (ML License Hub). O endereço antigo de validação (hub.mlopesdesign.com.br) não é mais consultado.
+* Aceita a chave do Pacote Agência (todos os plugins ML em vários sites).
+* Teste grátis de 30 dias por site. Quem já usava o plugin recebe o teste automaticamente na primeira visita ao painel.
+* Sem teste ou licença: o painel fica só para leitura (criar, editar, gerar e apagar projetos e salvar configurações). Os GIFs já publicados continuam funcionando no site e nada é apagado.
+* Aba Licença refeita: sem campos de endpoint, plano e status manuais; com teste grátis, ativar, conferir e remover deste site.
 
 = 1.1.4.6 =
 * Atualizações automáticas passam a vir do repositório público de releases (ml-gif-pro-releases); o código-fonte passa a ser privado.

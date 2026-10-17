@@ -3,7 +3,7 @@
  * Plugin Name: ML Gif Pro
  * Plugin URI: https://mlopesdesign.com.br
  * Description: Gerador profissional de GIF animado físico a partir de imagens da Media Library. Salva o arquivo .gif real em /wp-content/uploads/ para uso direto em banners, carrosséis e campos de URL.
- * Version: 1.1.4.6
+ * Version: 1.2.0
  * Requires at least: 6.0
  * Requires PHP: 8.1
  * Author: Marcio Lopes
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('MLGIF_VERSION', '1.1.4.6');
+define('MLGIF_VERSION', '1.2.0');
 define('MLGIF_FILE', __FILE__);
 define('MLGIF_DIR', plugin_dir_path(__FILE__));
 define('MLGIF_URL', plugin_dir_url(__FILE__));
@@ -25,6 +25,7 @@ define('MLGIF_OPTION_KEY', 'mlgif_settings');
 
 require_once MLGIF_DIR . 'includes/class-mlgif-helpers.php';
 require_once MLGIF_DIR . 'includes/class-mlgif-license.php';
+MLGIF_License::boot();
 require_once MLGIF_DIR . 'includes/class-mlgif-settings.php';
 require_once MLGIF_DIR . 'includes/class-mlgif-db.php';
 require_once MLGIF_DIR . 'includes/class-mlgif-optimizer.php';

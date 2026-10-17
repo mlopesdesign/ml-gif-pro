@@ -11,3 +11,7 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 }
 
 delete_transient('mlgif_updater_release_cache');
+
+// 1.2.0: licença pelo site tools — a licença local fica (reinstalar recupera); só a
+// renovação diária é desagendada.
+wp_clear_scheduled_hook('mllc_ml_gif_pro_refresh');
