@@ -11,13 +11,6 @@ final class MLGIF_Settings {
             'menu_label'          => 'ML Gif Pro',
             'primary_status'      => 'Motor ativo',
             'secondary_status'    => 'Imagick pronto',
-            'enable_license_tab'  => '1',
-            'license_product_id'  => 'ml-gif-pro',
-            'license_endpoint'    => 'https://hub.mlopesdesign.com.br/wp-json/ml-license/v1/validate',
-            'license_item_name'   => 'ML Gif Pro',
-            'license_seller_name' => 'ML Lopes Design',
-            'license_cta_title'   => 'ML Gif Pro - Licença Comercial',
-            'license_cta_text'    => 'Ative sua licença para desbloquear todos os recursos do ML Gif Pro.',
             'max_width'            => '1200',
             'max_height'           => '1920',
             'lock_ratio_default'   => '1',
@@ -56,15 +49,8 @@ final class MLGIF_Settings {
         $current['menu_label']          = sanitize_text_field((string) ($input['menu_label'] ?? $current['menu_label']));
         $current['primary_status']      = sanitize_text_field((string) ($input['primary_status'] ?? $current['primary_status']));
         $current['secondary_status']    = sanitize_text_field((string) ($input['secondary_status'] ?? $current['secondary_status']));
-        if (array_key_exists('enable_license_tab', $input)) {
-            $current['enable_license_tab'] = empty($input['enable_license_tab']) ? '0' : '1';
-        }
-        $current['license_product_id']  = sanitize_text_field((string) ($input['license_product_id'] ?? $current['license_product_id']));
-        $current['license_endpoint']    = esc_url_raw((string) ($input['license_endpoint'] ?? $current['license_endpoint']));
-        $current['license_item_name']   = sanitize_text_field((string) ($input['license_item_name'] ?? $current['license_item_name']));
-        $current['license_seller_name'] = sanitize_text_field((string) ($input['license_seller_name'] ?? $current['license_seller_name']));
-        $current['license_cta_title']   = sanitize_text_field((string) ($input['license_cta_title'] ?? $current['license_cta_title']));
-        $current['license_cta_text']    = sanitize_textarea_field((string) ($input['license_cta_text'] ?? $current['license_cta_text']));
+        // 1.2.0: os antigos campos de licença (endpoint, Product ID etc.) não são mais usados;
+        // se existirem no banco, continuam guardados como estavam.
 
         // Limites globais de dimensão (trava anti-GIF gigante)
         $current['max_width']  = (string) min(2000, max(100, (int) ($input['max_width']  ?? $current['max_width'])));

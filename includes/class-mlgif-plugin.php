@@ -22,7 +22,6 @@ final class MLGIF_Plugin {
         add_action('init', [MLGIF_DB::class, 'maybe_create_table']);
         add_action('admin_post_mlgif_save_settings', [$this, 'handle_save_settings']);
         add_action('admin_init', [$this, 'handle_flush_updater_cache']);
-        add_action('admin_post_mlgif_save_license',  [$this, 'handle_save_license']);
 
         add_action('wp_ajax_mlgif_save_project',    [$this, 'ajax_save_project']);
         add_action('wp_ajax_mlgif_generate',        [$this, 'ajax_generate']);
@@ -62,15 +61,15 @@ final class MLGIF_Plugin {
         }
         MLGIF_DB::create_table();
         $settings       = $this->settings_manager->get_settings();
-        $license        = $this->license_manager->get_state();
-        $license_config = $this->license_manager->get_runtime_config();
+        $license        = $this->license_manager->get_license_summary();
         $active_tab     = isset($_GET['tab']) ? sanitize_key((string) $_GET['tab']) : 'dashboard';
         $toast_message  = isset($_GET['mlgif_toast']) ? sanitize_text_field(wp_unslash((string) $_GET['mlgif_toast'])) : '';
         $toast_type     = isset($_GET['mlgif_toast_type']) ? sanitize_key((string) $_GET['mlgif_toast_type']) : 'success';
-        $this->admin_ui->render($settings, $license, $license_config, $active_tab, $toast_message, $toast_type, $this->license_manager);
+        $this->admin_ui->render($settings, $license, $active_tab, $toast_message, $toast_type);
     }
 
     public function handle_save_settings(): void {
+        MLGIF_License::guard_write();
         if (!current_user_can('manage_options')) {
             wp_die(esc_html__('Unauthorized.', 'ml-gif-pro'));
         }
@@ -81,17 +80,6 @@ final class MLGIF_Plugin {
         $this->redirect_with_toast('settings', 'Configurações salvas.', 'success');
     }
 
-    public function handle_save_license(): void {
-        if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('Unauthorized.', 'ml-gif-pro'));
-        }
-        check_admin_referer('mlgif_save_license');
-        $raw   = isset($_POST['mlgif_license']) ? wp_unslash($_POST['mlgif_license']) : [];
-        $state = $this->license_manager->save(is_array($raw) ? $raw : []);
-        $msg   = !empty($state['message']) ? (string) $state['message'] : 'Licença salva.';
-        $this->redirect_with_toast('license', $msg, 'success');
-    }
-
     public function ajax_save_project(): void {
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['error' => 'Unauthorized.']);
@@ -99,6 +87,7 @@ final class MLGIF_Plugin {
         if (!check_ajax_referer('mlgif_ajax', 'nonce', false)) {
             wp_send_json_error(['error' => 'Nonce inválido.']);
         }
+        MLGIF_License::guard_write(true);
         $id       = (int) ($this->post('id') ?? 0);
         $title    = sanitize_text_field((string) ($this->post('title') ?? ''));
         $images   = json_decode(wp_unslash((string) ($this->post('images') ?? '[]')), true);
@@ -144,6 +133,7 @@ final class MLGIF_Plugin {
         if (!check_ajax_referer('mlgif_ajax', 'nonce', false)) {
             wp_send_json_error(['error' => 'Nonce inválido.']);
         }
+        MLGIF_License::guard_write(true);
 
         $id       = (int) ($this->post('id') ?? 0);
         $title    = sanitize_text_field((string) ($this->post('title') ?? ''));
@@ -261,6 +251,7 @@ final class MLGIF_Plugin {
         if (!check_ajax_referer('mlgif_ajax', 'nonce', false)) {
             wp_send_json_error(['error' => 'Nonce inválido.']);
         }
+        MLGIF_License::guard_write(true);
         $id = (int) ($this->post('id') ?? 0);
         if ($id <= 0) {
             wp_send_json_error(['error' => 'ID inválido.']);
