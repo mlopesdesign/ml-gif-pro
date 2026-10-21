@@ -5,6 +5,8 @@ on:
     tags:
       - 'v*.*.*'
       - 'v*.*.*.*'
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -21,7 +23,7 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          TAG=${GITHUB_REF#refs/tags/}
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then TAG=${GITHUB_REF#refs/tags/}; else TAG="v$(grep -m1 "Version:" ml-gif-pro.php | sed 's/.*Version: *//' | tr -d '\r ')"; fi
           VERSION=${TAG#v}
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -75,7 +77,14 @@ jobs:
           fi
           echo "ZIP structure OK"
 
+      - name: ML Release Gate (plugin sozinho, identidade, atualizacao na mesma pasta)
+        # Trava obrigatoria: se reprovar, nenhum release e criado e nada chega aos clientes.
+        env:
+          GATE_MODE: ${{ startsWith(github.ref, 'refs/tags/') && 'release' || 'pr' }}
+        run: bash .github/gate/gate.sh ml-gif-pro ${{ steps.version.outputs.zip_name }}
+
       - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
@@ -93,13 +102,14 @@ jobs:
       # O updater (1.1.4.6+) consulta SOMENTE o repositorio publico de releases.
       # Requer o secret GH_RELEASE_TOKEN (PAT com contents:write em ml-gif-pro-releases).
       - name: Verificar token do repositorio de releases
+        if: startsWith(github.ref, 'refs/tags/')
         id: reltoken
         env:
           T: ${{ secrets.GH_RELEASE_TOKEN }}
         run: if [ -n "$T" ]; then echo "ok=true" >> $GITHUB_OUTPUT; else echo "ok=false" >> $GITHUB_OUTPUT; echo "::warning::GH_RELEASE_TOKEN ausente - publique o ZIP manualmente em ml-gif-pro-releases"; fi
 
       - name: Publicar no repositorio publico de releases
-        if: steps.reltoken.outputs.ok == 'true'
+        if: startsWith(github.ref, 'refs/tags/') && steps.reltoken.outputs.ok == 'true'
         uses: softprops/action-gh-release@v2
         with:
           repository: mlopesdesign/ml-gif-pro-releases
